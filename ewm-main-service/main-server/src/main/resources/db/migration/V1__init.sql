@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS categories
+(
+    id   BIGSERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL CONSTRAINT uq_category_name UNIQUE
+    );
+
+CREATE TABLE IF NOT EXISTS users
+(
+    id    BIGSERIAL PRIMARY KEY,
+    name  VARCHAR(250) NOT NULL,
+    email VARCHAR(254) NOT NULL CONSTRAINT uq_email UNIQUE
+    );
