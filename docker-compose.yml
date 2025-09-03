@@ -47,10 +47,10 @@ services:
       timeout: 3s
       retries: 20
 
-  main-service:
+  ewm-service:
     build: { context: ./ewm-main-service/main-server }
     image: ewm-main-server:latest
-    container_name: main-service
+    container_name: ewm-service
     depends_on:
       main-db: { condition: service_healthy }
       stats-server: { condition: service_healthy }
