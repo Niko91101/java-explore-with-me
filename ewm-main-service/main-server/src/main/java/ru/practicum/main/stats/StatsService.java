@@ -1,15 +1,15 @@
-package ru.practicum.stats.client;
+package ru.practicum.main.stats;
 
-import ru.practicum.stats.dto.EndpointHitDto;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-public interface StatsClient {
-    void saveHit(EndpointHitDto hit);
+public interface StatsService {
+    void saveHit(HttpServletRequest request);
 
-    Map<String, Long> getStats(LocalDateTime start,
+    Map<String, Long> getViews(LocalDateTime start,
                                LocalDateTime end,
                                List<String> uris,
                                boolean unique);

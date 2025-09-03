@@ -1,22 +1,24 @@
-version: "3.8"
 services:
   stats-db:
-    image: postgres:16.1
+    image: postgres:16-alpine
+    container_name: stats-db
     environment:
       POSTGRES_DB: stats
       POSTGRES_USER: stats
       POSTGRES_PASSWORD: stats
     ports:
-      - "6542:5432"
+      - "6541:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U stats -d stats" ]
+      test: ["CMD-SHELL", "pg_isready -U stats -d stats"]
       interval: 5s
       timeout: 3s
       retries: 20
 
-  stats-server:
+  ewm-stats-server:
     build:
       context: ./ewm-stats-service/stats-server
+    image: ewm-stats-server:latest
+    container_name: ewm-stats-server
     depends_on:
       stats-db:
         condition: service_healthy
@@ -24,5 +26,49 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats
       SPRING_DATASOURCE_USERNAME: stats
       SPRING_DATASOURCE_PASSWORD: stats
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
     ports:
       - "9090:9090"
+
+  main-db:
+    image: postgres:16-alpine
+    container_name: main-db
+    environment:
+      POSTGRES_DB: ewm
+      POSTGRES_USER: ewm
+      POSTGRES_PASSWORD: ewm
+    ports:
+      - "6542:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ewm -d ewm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ewm-main-server:
+    build:
+      context: ./ewm-main-service/main-server
+    image: ewm-main-server:latest
+    container_name: ewm-main-server
+    depends_on:
+      main-db:
+        condition: service_healthy
+      ewm-stats-server:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://main-db:5432/ewm
+      SPRING_DATASOURCE_USERNAME: ewm
+      SPRING_DATASOURCE_PASSWORD: ewm
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+
+      # настройки stats-client, читаются из application.yml (см. ниже)
+      STATS_BASE_URL: http://ewm-stats-server:9090
+      STATS_APP_NAME: ewm-main-service
+      STATS_CONNECT_TIMEOUT_MS: 3000
+      STATS_READ_TIMEOUT_MS: 3000
+    ports:
+      - "8080:8080"
