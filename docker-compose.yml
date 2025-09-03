@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   stats-db:
     image: postgres:16-alpine
@@ -9,16 +11,16 @@ services:
     ports:
       - "6541:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U stats -d stats"]
+      test: [ "CMD-SHELL", "pg_isready -U stats -d stats" ]
       interval: 5s
       timeout: 3s
       retries: 20
 
-  ewm-stats-server:
+  stats-server:
     build:
       context: ./ewm-stats-service/stats-server
     image: ewm-stats-server:latest
-    container_name: ewm-stats-server
+    container_name: stats-server
     depends_on:
       stats-db:
         condition: service_healthy
@@ -31,6 +33,11 @@ services:
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
     ports:
       - "9090:9090"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:9090/actuator/health" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   main-db:
     image: postgres:16-alpine
@@ -42,21 +49,21 @@ services:
     ports:
       - "6542:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ewm -d ewm"]
+      test: [ "CMD-SHELL", "pg_isready -U ewm -d ewm" ]
       interval: 5s
       timeout: 3s
       retries: 20
 
-  ewm-main-server:
+  main-service:
     build:
       context: ./ewm-main-service/main-server
     image: ewm-main-server:latest
-    container_name: ewm-main-server
+    container_name: main-service
     depends_on:
       main-db:
         condition: service_healthy
-      ewm-stats-server:
-        condition: service_started
+      stats-server:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://main-db:5432/ewm
       SPRING_DATASOURCE_USERNAME: ewm
@@ -65,10 +72,14 @@ services:
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
 
-      # настройки stats-client, читаются из application.yml (см. ниже)
-      STATS_BASE_URL: http://ewm-stats-server:9090
+      STATS_BASE_URL: http://stats-server:9090
       STATS_APP_NAME: ewm-main-service
       STATS_CONNECT_TIMEOUT_MS: 3000
       STATS_READ_TIMEOUT_MS: 3000
     ports:
       - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
