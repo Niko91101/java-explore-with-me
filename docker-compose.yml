@@ -1,0 +1,59 @@
+services:
+  main-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: main_service
+      POSTGRES_USER: main
+      POSTGRES_PASSWORD: main
+    ports:
+      - "5432:5432"
+    volumes:
+      - main_pgdata:/var/lib/postgresql/data
+
+  stats-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: stats_service
+      POSTGRES_USER: stats
+      POSTGRES_PASSWORD: stats
+    ports:
+      - "5433:5432"
+    volumes:
+      - stats_pgdata:/var/lib/postgresql/data
+
+  stats-server:
+    build:
+      context: ./ewm-stats-service/stats-server
+      dockerfile: Dockerfile
+    depends_on:
+      - stats-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats_service
+      SPRING_DATASOURCE_USERNAME: stats
+      SPRING_DATASOURCE_PASSWORD: stats
+      SERVER_PORT: 9090
+      SPRING_APPLICATION_NAME: stats-server
+    ports:
+      - "9090:9090"
+
+  main-service:
+    build:
+      context: ./ewm-main-service
+      dockerfile: Dockerfile
+    depends_on:
+      - main-db
+      - stats-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://main-db:5432/main_service
+      SPRING_DATASOURCE_USERNAME: main
+      SPRING_DATASOURCE_PASSWORD: main
+      SERVER_PORT: 8080
+      SPRING_APPLICATION_NAME: main-service
+      APP_STATS_SERVER_URL: http://stats-server:9090
+      APP_NAME: main-service
+    ports:
+      - "8080:8080"
+
+volumes:
+  main_pgdata:
+  stats_pgdata:
