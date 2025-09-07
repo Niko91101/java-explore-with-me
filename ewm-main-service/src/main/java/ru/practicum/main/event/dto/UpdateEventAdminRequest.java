@@ -22,6 +22,7 @@ public class UpdateEventAdminRequest {
 
     private Boolean paid;
 
+    @jakarta.validation.constraints.PositiveOrZero(message = "must be greater than or equal to 0")
     private Integer participantLimit;
 
     private Boolean requestModeration;

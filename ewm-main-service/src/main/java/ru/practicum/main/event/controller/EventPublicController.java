@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import ru.practicum.main.commons.enums.PublicSort;
 import ru.practicum.main.event.dto.EventFullDto;
@@ -16,6 +19,7 @@ import ru.practicum.main.event.dto.EventShortDto;
 import ru.practicum.main.event.service.EventService;
 import ru.practicum.main.stats.StatsService;
 
+@Validated
 @RestController
 @RequestMapping("/events")
 @RequiredArgsConstructor
@@ -33,8 +37,8 @@ public class EventPublicController {
                                          @RequestParam(required = false) String rangeEnd,
                                          @RequestParam(defaultValue = "false") Boolean onlyAvailable,
                                          @RequestParam(required = false) PublicSort sort,
-                                         @RequestParam(defaultValue = "0") Integer from,
-                                         @RequestParam(defaultValue = "10") Integer size,
+                                         @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                         @RequestParam(defaultValue = "10") @Positive Integer size,
                                          HttpServletRequest request) {
         List<EventShortDto> result = eventService.searchPublic(
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size

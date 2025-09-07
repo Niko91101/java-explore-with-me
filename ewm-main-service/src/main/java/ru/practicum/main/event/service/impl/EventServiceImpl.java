@@ -33,6 +33,7 @@ import ru.practicum.main.event.dto.UpdateEventUserRequest;
 import ru.practicum.main.event.mapper.EventMapper;
 import ru.practicum.main.event.model.Event;
 import ru.practicum.main.event.repository.EventRepository;
+import ru.practicum.main.exception.BadRequestException;
 import ru.practicum.main.exception.ConflictException;
 import ru.practicum.main.exception.NotFoundException;
 import ru.practicum.main.request.repository.ParticipationRequestRepository;
@@ -70,8 +71,11 @@ public class EventServiceImpl implements ru.practicum.main.event.service.EventSe
                                             Integer size) {
 
         LocalDateTime start = TimeUtils.parseOrNull(rangeStart, apiDateTimeFormatter);
-        LocalDateTime end = TimeUtils.parseOrNull(rangeEnd, apiDateTimeFormatter);
+        LocalDateTime end   = TimeUtils.parseOrNull(rangeEnd,   apiDateTimeFormatter);
 
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new BadRequestException("rangeStart must be before rangeEnd");
+        }
         if (start == null && end == null) {
             start = LocalDateTime.now();
         }
@@ -208,7 +212,7 @@ public class EventServiceImpl implements ru.practicum.main.event.service.EventSe
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime eventDate = TimeUtils.parseOrNull(dto.getEventDate(), apiDateTimeFormatter);
         if (eventDate == null || !eventDate.isAfter(now.plusHours(2))) {
-            throw new ConflictException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + dto.getEventDate());
+            throw new BadRequestException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + dto.getEventDate());
         }
 
         User initiator = userRepository.findById(userId)
@@ -266,7 +270,7 @@ public class EventServiceImpl implements ru.practicum.main.event.service.EventSe
         if (request.getEventDate() != null) {
             LocalDateTime newDate = TimeUtils.parseOrNull(request.getEventDate(), apiDateTimeFormatter);
             if (newDate == null || !newDate.isAfter(LocalDateTime.now().plusHours(2))) {
-                throw new ConflictException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + request.getEventDate());
+                throw new BadRequestException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + request.getEventDate());
             }
             event.setEventDate(newDate);
         }

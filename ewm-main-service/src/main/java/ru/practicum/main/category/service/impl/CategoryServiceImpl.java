@@ -22,6 +22,7 @@ import ru.practicum.main.util.PageUtils;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
+
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
@@ -49,7 +50,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public CategoryDto update(Long catId, CategoryDto dto) {
+    public CategoryDto update(Long catId, NewCategoryDto dto) {
         Category category = categoryRepository.findById(catId)
                 .orElseThrow(() -> new NotFoundException("Category with id=" + catId + " was not found"));
         category.setName(dto.getName());

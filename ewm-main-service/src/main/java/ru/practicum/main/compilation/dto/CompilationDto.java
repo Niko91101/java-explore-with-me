@@ -2,6 +2,7 @@ package ru.practicum.main.compilation.dto;
 
 import java.util.List;
 
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class CompilationDto {
 
     private Long id;
 
+    @Size(min = 1, max = 50, message = "size must be between 1 and 50")
     private String title;
 
     private Boolean pinned;

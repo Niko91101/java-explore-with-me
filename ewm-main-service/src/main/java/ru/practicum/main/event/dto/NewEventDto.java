@@ -28,6 +28,7 @@ public class NewEventDto {
 
     private Boolean paid = Boolean.FALSE;
 
+    @jakarta.validation.constraints.PositiveOrZero(message = "must be greater than or equal to 0")
     private Integer participantLimit = 0;
 
     private Boolean requestModeration = Boolean.TRUE;
