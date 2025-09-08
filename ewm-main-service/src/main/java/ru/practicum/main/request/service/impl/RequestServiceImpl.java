@@ -149,35 +149,46 @@ public class RequestServiceImpl implements ru.practicum.main.request.service.Req
 
         Integer limit = event.getParticipantLimit() == null ? 0 : event.getParticipantLimit();
         long confirmed = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-        long capacityLeft = limit == 0 ? Long.MAX_VALUE : (limit - confirmed);
+        long capacityLeft = (limit == 0) ? Long.MAX_VALUE : (limit - confirmed);
 
         List<ParticipationRequestDto> confirmedDtos = new ArrayList<>();
         List<ParticipationRequestDto> rejectedDtos = new ArrayList<>();
 
         if (request.getStatus() == RequestUpdateStatus.CONFIRMED) {
+            List<ParticipationRequest> toConfirm = new ArrayList<>();
             for (ParticipationRequest pr : toUpdate) {
                 if (capacityLeft <= 0) {
                     throw new ConflictException("The participant limit has been reached");
                 }
                 pr.setStatus(RequestStatus.CONFIRMED);
-                ParticipationRequest saved = requestRepository.save(pr);
-                confirmedDtos.add(ParticipationRequestMapper.toDto(saved, isoFormatter));
+                toConfirm.add(pr);
                 capacityLeft--;
+            }
+
+            List<ParticipationRequest> savedConfirmed = requestRepository.saveAll(toConfirm);
+            for (ParticipationRequest pr : savedConfirmed) {
+                confirmedDtos.add(ParticipationRequestMapper.toDto(pr, isoFormatter));
             }
 
             if (limit != 0 && capacityLeft == 0) {
                 List<ParticipationRequest> pendings = requestRepository.findAllByEventIdAndStatus(eventId, RequestStatus.PENDING);
-                for (ParticipationRequest pending : pendings) {
-                    pending.setStatus(RequestStatus.REJECTED);
-                    ParticipationRequest saved = requestRepository.save(pending);
-                    rejectedDtos.add(ParticipationRequestMapper.toDto(saved, isoFormatter));
+                if (!pendings.isEmpty()) {
+                    for (ParticipationRequest pending : pendings) {
+                        pending.setStatus(RequestStatus.REJECTED);
+                    }
+                    List<ParticipationRequest> savedRejected = requestRepository.saveAll(pendings);
+                    for (ParticipationRequest pr : savedRejected) {
+                        rejectedDtos.add(ParticipationRequestMapper.toDto(pr, isoFormatter));
+                    }
                 }
             }
         } else if (request.getStatus() == RequestUpdateStatus.REJECTED) {
             for (ParticipationRequest pr : toUpdate) {
                 pr.setStatus(RequestStatus.REJECTED);
-                ParticipationRequest saved = requestRepository.save(pr);
-                rejectedDtos.add(ParticipationRequestMapper.toDto(saved, isoFormatter));
+            }
+            List<ParticipationRequest> savedRejected = requestRepository.saveAll(toUpdate);
+            for (ParticipationRequest pr : savedRejected) {
+                rejectedDtos.add(ParticipationRequestMapper.toDto(pr, isoFormatter));
             }
         }
 

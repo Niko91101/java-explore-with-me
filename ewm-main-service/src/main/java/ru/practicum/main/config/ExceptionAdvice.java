@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,8 @@ import ru.practicum.main.exception.NotFoundException;
 @RestControllerAdvice
 public class ExceptionAdvice {
 
+    private static final Logger log = LoggerFactory.getLogger(ExceptionAdvice.class); // <-- добавили
+
     private final DateTimeFormatter formatter;
 
     public ExceptionAdvice(DateTimeFormatter apiDateTimeFormatter) {
@@ -33,6 +37,7 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(NotFoundException ex) {
+        log.warn("404 NotFound: {}", ex.getMessage());
         ApiError body = buildError(
                 "The required object was not found.",
                 ex.getMessage(),
@@ -44,6 +49,7 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiError> handleConflict(ConflictException ex) {
+        log.warn("409 Conflict: {}", ex.getMessage());
         ApiError body = buildError(
                 "For the requested operation the conditions are not met.",
                 ex.getMessage(),
@@ -55,9 +61,11 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String mostSpecific = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        log.warn("409 DataIntegrityViolation: {}", mostSpecific);
         ApiError body = buildError(
                 "Integrity constraint has been violated.",
-                ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage(),
+                mostSpecific,
                 HttpStatus.CONFLICT,
                 Collections.emptyList()
         );
@@ -66,6 +74,7 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex) {
+        log.warn("400 BadRequest: {}", ex.getMessage());
         ApiError body = buildError(
                 "Incorrectly made request.",
                 ex.getMessage(),
@@ -78,6 +87,7 @@ public class ExceptionAdvice {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String message = ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
+        log.warn("400 TypeMismatch: {}", message);
         ApiError body = buildError(
                 "Incorrectly made request.",
                 message,
@@ -96,6 +106,7 @@ public class ExceptionAdvice {
             errors.add(msg);
         });
         String first = errors.isEmpty() ? "Validation failed" : errors.get(0);
+        log.warn("400 Validation failed: {}; totalErrors={}", first, errors.size());
         ApiError body = buildError(
                 "Incorrectly made request.",
                 first,
@@ -114,6 +125,7 @@ public class ExceptionAdvice {
             errors.add(msg);
         });
         String first = errors.isEmpty() ? "Validation failed" : errors.get(0);
+        log.warn("400 ConstraintViolation: {}; totalErrors={}", first, errors.size());
         ApiError body = buildError(
                 "Incorrectly made request.",
                 first,
@@ -125,6 +137,7 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex) {
+        log.warn("400 MissingServletRequestParameter: {}", ex.getMessage());
         ApiError body = buildError("Incorrectly made request.", ex.getMessage(), HttpStatus.BAD_REQUEST, Collections.emptyList());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
@@ -132,12 +145,14 @@ public class ExceptionAdvice {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex) {
         String msg = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        log.warn("400 HttpMessageNotReadable: {}", msg);
         ApiError body = buildError("Incorrectly made request.", msg, HttpStatus.BAD_REQUEST, Collections.emptyList());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleOther(Exception ex) {
+        log.error("500 Unexpected error: {}", ex.getMessage(), ex);
         ApiError body = buildError(
                 "Unexpected error.",
                 ex.getMessage(),
