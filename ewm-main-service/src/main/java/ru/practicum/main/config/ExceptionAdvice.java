@@ -22,12 +22,13 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import ru.practicum.main.commons.dto.error.ApiError;
 import ru.practicum.main.exception.BadRequestException;
 import ru.practicum.main.exception.ConflictException;
+import ru.practicum.main.exception.ForbiddenException;
 import ru.practicum.main.exception.NotFoundException;
 
 @RestControllerAdvice
 public class ExceptionAdvice {
 
-    private static final Logger log = LoggerFactory.getLogger(ExceptionAdvice.class); // <-- добавили
+    private static final Logger log = LoggerFactory.getLogger(ExceptionAdvice.class);
 
     private final DateTimeFormatter formatter;
 
@@ -57,6 +58,18 @@ public class ExceptionAdvice {
                 Collections.emptyList()
         );
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> handleForbidden(ForbiddenException ex) {
+        log.warn("403 Forbidden: {}", ex.getMessage());
+        ApiError body = buildError(
+                "Access is denied.",
+                ex.getMessage(),
+                HttpStatus.FORBIDDEN,
+                Collections.emptyList()
+        );
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
